@@ -1,0 +1,16 @@
+# Python environment
+venv/
+
+# Django stuff
+*.pyc
+__pycache__/
+db.sqlite3
+
+# IDE
+.vscode/
+.idea/
+.env
+
+# OS
+.DS_Store
+Thumbs.db
