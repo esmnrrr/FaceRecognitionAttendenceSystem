@@ -1,0 +1,10 @@
+django
+mysqlclient
+pillow
+opencv-python
+dlib
+face-recognition
+face-recognition-models
+cmake
+numpy
+pymysql
