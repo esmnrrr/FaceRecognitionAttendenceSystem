@@ -8,3 +8,4 @@ face-recognition-models
 cmake
 numpy
 pymysql
+cryptography
