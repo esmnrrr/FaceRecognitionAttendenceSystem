@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Yüz Tanıma Sistemi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f0f2f5; }
+        .camera-box { border: 5px solid #fff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">🚀 Canlı Personel Takip Sistemi</h1>
+        
+        <div class="row">
+            <div class="col-md-7 text-center">
+                <div class="card p-3">
+                    <h3>Canlı Kamera</h3>
+                    <img src="{% url 'video_feed' %}" class="img-fluid camera-box" width="100%">
+                </div>
+            </div>
+
+            <div class="col-md-5">
+                <div class="card p-3">
+                    <h3>Bugünkü Yoklama</h3>
+                    <table class="table table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Personel</th>
+                                <th>Giriş</th>
+                                <th>Son Görülme (Çıkış)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in attendance_list %}
+                            <tr>
+                                <td>{{ item.employee.first_name }} {{ item.employee.last_name }}</td>
+                                <td>{{ item.time_in|time:"H:i:s" }}</td>
+                                <td>{{ item.time_out|time:"H:i:s"|default:"-" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3">Henüz kimse gelmedi.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <a href="/" class="btn btn-primary w-100 mt-2">Listeyi Yenile</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
