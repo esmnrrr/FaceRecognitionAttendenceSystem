@@ -8,3 +8,5 @@
 #python manage.py runserver
 
 #python manage.py yoklama_baslat
+
+#http://127.0.0.1:8000/
