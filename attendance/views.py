@@ -11,22 +11,30 @@ from django.utils import timezone
 class VideoCamera(object):
     def __init__(self):
         self.video = cv2.VideoCapture(0)
+        if not self.video.isOpened():
+            print("kamera açılmadı")
         
         # Veritabanındaki yüzleri hafızaya al
         self.known_face_encodings = []
         self.known_face_ids = []
         self.known_face_names = []
+        self.last_seen = {}
         
         employees = Employee.objects.all()
         for emp in employees:
             try:
                 img = face_recognition.load_image_file(emp.photo.path)
-                enc = face_recognition.face_encodings(img)[0]
+                encodings = face_recognition.face_recognitions(img)
+
+                if len(encodings) > 0:
+                    enc = encodings[0]
+                else:
+                    continue
                 self.known_face_encodings.append(enc)
                 self.known_face_ids.append(emp.id)
                 self.known_face_names.append(f"{emp.first_name} {emp.last_name}")
-            except:
-                pass
+            except Exception as e:
+                print(f"Yüz yüklemede hata: {e}")
 
     def __del__(self):
         self.video.release()
@@ -54,8 +62,18 @@ class VideoCamera(object):
                 if matches[best_match_index]:
                     name = self.known_face_names[best_match_index]
                     emp_id = self.known_face_ids[best_match_index]
-                    # Yoklamayı kaydet
-                    self.record_attendance(emp_id)
+
+                    current_time = timezone.now()
+                    #ilk kez gördüyse
+                    if emp_id not in self.last_seen:
+                        self.record_attendance(emp_id)
+                        self.last_seen[emp_id] = current_time
+
+                    #yine 30 saniye geçince güncelleme kısmı
+                    elif (current_time - self.last_seen[emp_id]).seconds > 30:
+                        self.record_attendance(emp_id)
+                        self.last_seen[emp_id] = current_time
+                    
             
             face_names.append(name)
 
