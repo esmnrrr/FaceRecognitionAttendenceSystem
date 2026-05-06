@@ -31,6 +31,9 @@ def main():
     # ADIM 2: Kamera Başlatma
     # -----------------------------------------------------------
     video_capture = cv2.VideoCapture(0)
+    if not video_capture.isOpened():
+        print("kamera açılmadı")
+        return
     print("Kamera açılıyor... Çıkmak için 'q' tuşuna basın.")
 
     while True:
