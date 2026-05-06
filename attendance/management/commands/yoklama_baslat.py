@@ -26,7 +26,15 @@ class Command(BaseCommand):
                 
                 # Resmi yükle ve encode et
                 person_image = face_recognition.load_image_file(image_path)
-                encoding = face_recognition.face_encodings(person_image)[0]
+                encodings = face_recognition.face_encodings(person_image)
+
+                if len(encodings) >0:
+                    encoding = encodings[0]
+                else:
+                    self.stdout.write(
+                        self.style.ERROR(f"Yüz bulunmadı : {emp.first_name}")
+                    )
+                    continue
                 
                 known_face_encodings.append(encoding)
                 known_face_ids.append(emp.id)
@@ -41,6 +49,8 @@ class Command(BaseCommand):
         # 2. KAMERAYI BAŞLAT
         video_capture = cv2.VideoCapture(0)
         self.stdout.write("Kamera başlatıldı. Çıkmak için 'q' tuşuna basın.")
+
+        last_seen = {}
 
         while True:
             ret, frame = video_capture.read()
@@ -68,9 +78,19 @@ class Command(BaseCommand):
                     if matches[best_match_index]:
                         name = known_face_names[best_match_index]
                         person_id = known_face_ids[best_match_index]
+
+                        current_time = timezone.now()
                         
                         # --- YOKLAMA KAYDI İŞLEMİ BURADA YAPILIYOR ---
-                        self.record_attendance(person_id, name)
+                        # kişiyi ilk defa görürse 
+                        if person_id not in last_seen:
+                            self.record_attendance(person_id, name)
+                            last_seen[person_id] = current_time
+
+                        elif (current_time - last_seen[person_id]).seconds > 30:
+                            self.record_attendance(person_id, name)
+                            last_seen[person_id] = current_time
+                        
 
                 face_names.append(name)
 
