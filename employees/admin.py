@@ -1,10 +1,10 @@
 from django.contrib import admin
-from .models import Employee
+from .models import Student
 
 # Bu kısım panelde nasıl görüneceğini ayarlar
-class EmployeeAdmin(admin.ModelAdmin):
-    list_display = ('emp_id', 'first_name', 'last_name', 'role', 'department')
-    search_fields = ('first_name', 'last_name', 'emp_id')
+class StudentAdmin(admin.ModelAdmin):
+    list_display = ('student_id', 'first_name', 'last_name', 'major', 'department')
+    search_fields = ('first_name', 'last_name', 'student_id')
 
 # İşte sihirli satır burası! Bunu yazmazsan panelde görünmez.
-admin.site.register(Employee, EmployeeAdmin)
+admin.site.register(Student, StudentAdmin)
