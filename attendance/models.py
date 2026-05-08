@@ -1,9 +1,9 @@
 from django.db import models
-from employees.models import Employee # Personel tablosunu buraya bağlıyoruz
+from students.models import Student # Ogrenci tablosunu buraya bağlıyoruz
 
 class Attendance(models.Model):
     # Hangi çalışan? (Employee tablosuna bağlantı - ForeignKey)
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
     
     # Hangi tarih? (Sadece tarih: 2023-10-27)
     date = models.DateField(auto_now_add=True)
@@ -15,4 +15,4 @@ class Attendance(models.Model):
     time_out = models.TimeField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.employee.first_name} - {self.date} {self.time_in}"
+        return f"{self.student.first_name} - {self.date} {self.time_in}"
