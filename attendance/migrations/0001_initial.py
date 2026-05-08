@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
                 ('date', models.DateField(auto_now_add=True)),
                 ('time_in', models.TimeField(auto_now_add=True)),
                 ('time_out', models.TimeField(blank=True, null=True)),
-                ('employee', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='students.student')),
+                ('student', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='students.student')),
             ],
         ),
     ]
