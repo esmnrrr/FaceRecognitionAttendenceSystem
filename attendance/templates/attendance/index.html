@@ -10,7 +10,7 @@
 </head>
 <body>
     <div class="container mt-5">
-        <h1 class="text-center mb-4">🚀 Canlı Personel Takip Sistemi</h1>
+        <h1 class="text-center mb-4">🚀 Canlı Öğrenci Takip Sistemi</h1>
         
         <div class="row">
             <div class="col-md-7 text-center">
@@ -26,7 +26,7 @@
                     <table class="table table-striped">
                         <thead class="table-dark">
                             <tr>
-                                <th>Personel</th>
+                                <th>Ogrenci</th>
                                 <th>Giriş</th>
                                 <th>Son Görülme (Çıkış)</th>
                             </tr>
@@ -34,7 +34,7 @@
                         <tbody>
                             {% for item in attendance_list %}
                             <tr>
-                                <td>{{ item.employee.first_name }} {{ item.employee.last_name }}</td>
+                                <td>{{ item.student.first_name }} {{ item.student.last_name }}</td>
                                 <td>{{ item.time_in|time:"H:i:s" }}</td>
                                 <td>{{ item.time_out|time:"H:i:s"|default:"-" }}</td>
                             </tr>
