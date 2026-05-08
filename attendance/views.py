@@ -3,7 +3,7 @@ from django.http import StreamingHttpResponse
 import cv2
 import face_recognition
 import numpy as np
-from employees.models import Employee
+from students.models import Student
 from attendance.models import Attendance
 from django.utils import timezone
 
@@ -20,8 +20,8 @@ class VideoCamera(object):
         self.known_face_names = []
         self.last_seen = {}
         
-        employees = Employee.objects.all()
-        for emp in employees:
+        students = Student.objects.all()
+        for student in students:
             try:
                 img = face_recognition.load_image_file(emp.photo.path)
                 encodings = face_recognition.face_recognitions(img)
@@ -61,13 +61,13 @@ class VideoCamera(object):
                 best_match_index = np.argmin(face_distances)
                 if matches[best_match_index]:
                     name = self.known_face_names[best_match_index]
-                    emp_id = self.known_face_ids[best_match_index]
+                    student_id = self.known_face_ids[best_match_index]
 
                     current_time = timezone.now()
                     #ilk kez gördüyse
-                    if emp_id not in self.last_seen:
-                        self.record_attendance(emp_id)
-                        self.last_seen[emp_id] = current_time
+                    if student_id not in self.last_seen:
+                        self.record_attendance(student_id)
+                        self.last_seen[student_id] = current_time
 
                     #yine 30 saniye geçince güncelleme kısmı
                     elif (current_time - self.last_seen[emp_id]).seconds > 30:
@@ -90,10 +90,10 @@ class VideoCamera(object):
     def record_attendance(self, person_id):
         today = timezone.now().date()
         now = timezone.now().time()
-        emp = Employee.objects.get(id=person_id)
+        emp = Student.objects.get(id=person_id)
         
         # Giriş yoksa oluştur, varsa çıkışı güncelle
-        obj, created = Attendance.objects.get_or_create(employee=emp, date=today)
+        obj, created = Attendance.objects.get_or_create(student=student, date=today)
         if created:
             obj.time_in = now
             obj.save()
