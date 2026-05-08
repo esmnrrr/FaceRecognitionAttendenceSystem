@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 import cv2
 import face_recognition
-from employees.models import Employee
+from students.models import Student
 from attendance.models import Attendance
 from django.utils import timezone
 import numpy as np
@@ -17,12 +17,12 @@ class Command(BaseCommand):
         known_face_ids = [] # İsim yerine ID tutacağız, veritabanından çekeceğiz
         known_face_names = []
 
-        employees = Employee.objects.all()
+        students = Student.objects.all()
 
-        for emp in employees:
+        for student in students:
             try:
                 # Veritabanındaki resim yolunu al
-                image_path = emp.photo.path
+                image_path = student.photo.path
                 
                 # Resmi yükle ve encode et
                 person_image = face_recognition.load_image_file(image_path)
@@ -37,12 +37,12 @@ class Command(BaseCommand):
                     continue
                 
                 known_face_encodings.append(encoding)
-                known_face_ids.append(emp.id)
-                known_face_names.append(f"{emp.first_name} {emp.last_name}")
+                known_face_ids.append(student.id)
+                known_face_names.append(f"{student.first_name} {emp.last_name}")
                 
-                self.stdout.write(self.style.SUCCESS(f"Yüklendi: {emp.first_name} {emp.last_name}"))
+                self.stdout.write(self.style.SUCCESS(f"Yüklendi: {student.first_name} {student.last_name}"))
             except Exception as e:
-                self.stdout.write(self.style.ERROR(f"Hata ({emp.first_name}): {e}"))
+                self.stdout.write(self.style.ERROR(f"Hata ({student.first_name}): {e}"))
 
         self.stdout.write(f"Toplam {len(known_face_encodings)} personel hafızaya alındı.")
 
@@ -107,7 +107,7 @@ class Command(BaseCommand):
                 cv2.rectangle(frame, (left, bottom - 35), (right, bottom), color, cv2.FILLED)
                 cv2.putText(frame, name, (left + 6, bottom - 6), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255, 255, 255), 1)
 
-            cv2.imshow('Personel Takip Sistemi', frame)
+            cv2.imshow('Yüz Tanıma Yoklama Sistemi', frame)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -121,12 +121,12 @@ class Command(BaseCommand):
         now_time = timezone.now().time()
         
         # Bu kişi için BUGÜN zaten kayıt var mı?
-        employee = Employee.objects.get(id=person_id)
-        existing_record = Attendance.objects.filter(employee=employee, date=today).first()
+        student = Student.objects.get(id=person_id)
+        existing_record = Attendance.objects.filter(student=student, date=today).first()
 
         if not existing_record:
             # Kayıt yoksa: YENİ GİRİŞ (Check-In)
-            Attendance.objects.create(employee=employee, date=today, time_in=now_time)
+            Attendance.objects.create(student=student, date=today, time_in=now_time)
             self.stdout.write(self.style.SUCCESS(f"✅ GİRİŞ YAPILDI: {name} - {now_time.strftime('%H:%M:%S')}"))
         else:
             # Kayıt varsa: ÇIKIŞ GÜNCELLE (Check-Out)
