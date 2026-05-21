@@ -6,7 +6,6 @@ class CourseAdmin(admin.ModelAdmin):
     list_display = ('name', 'start_time', 'is_active')
 
 class AttendanceAdmin(admin.ModelAdmin):
-    # time_out (çıkış saati) yok, sadece giriş var
     list_display = ('student', 'course', 'date', 'time_in')
     list_filter = ('date', 'course')
 
