@@ -1,6 +1,6 @@
 from django.db import models
 # Senin klasör adın şu an 'employees' olduğu için böyle bırakıyoruz kanka
-from employees.models import Student 
+from students.models import Student 
 
 class Course(models.Model):
     name = models.CharField(max_length=100, verbose_name="Ders Adı")
