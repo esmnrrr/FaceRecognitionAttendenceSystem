@@ -23,16 +23,16 @@ class VideoCamera(object):
         students = Student.objects.all()
         for student in students:
             try:
-                img = face_recognition.load_image_file(emp.photo.path)
-                encodings = face_recognition.face_recognitions(img)
+                img = face_recognition.load_image_file(student.photo.path)
+                encodings = face_recognition.face_encodings(img)
 
                 if len(encodings) > 0:
                     enc = encodings[0]
                 else:
                     continue
                 self.known_face_encodings.append(enc)
-                self.known_face_ids.append(emp.id)
-                self.known_face_names.append(f"{emp.first_name} {emp.last_name}")
+                self.known_face_ids.append(student.id)
+                self.known_face_names.append(f"{student.first_name} {student.last_name}")
             except Exception as e:
                 print(f"Yüz yüklemede hata: {e}")
 
@@ -70,9 +70,9 @@ class VideoCamera(object):
                         self.last_seen[student_id] = current_time
 
                     #yine 30 saniye geçince güncelleme kısmı
-                    elif (current_time - self.last_seen[emp_id]).seconds > 30:
-                        self.record_attendance(emp_id)
-                        self.last_seen[emp_id] = current_time
+                    elif (current_time - self.last_seen[student_id]).seconds > 30:
+                        self.record_attendance(student_id)
+                        self.last_seen[student_id] = current_time
                     
             
             face_names.append(name)
@@ -90,17 +90,13 @@ class VideoCamera(object):
     def record_attendance(self, person_id):
         today = timezone.now().date()
         now = timezone.now().time()
-        emp = Student.objects.get(id=person_id)
+        student = Student.objects.get(id=person_id)
         
-        # Giriş yoksa oluştur, varsa çıkışı güncelle
-        obj, created = Attendance.objects.get_or_create(student=student, date=today)
-        if created:
-            obj.time_in = now
-            obj.save()
-        else:
-            obj.time_out = now
-            obj.save()
-
+        Attendance.objects.get_or_create(
+        student=student,
+        date=today
+    )
+       
 # Görünümler
 def index(request):
     attendance_list = Attendance.objects.filter(date=timezone.now().date()).order_by('-time_in')
