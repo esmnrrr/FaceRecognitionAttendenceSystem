@@ -11,7 +11,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         # 1. VERİTABANINDAN KULLANICILARI YÜKLE
-        self.stdout.write("Veritabanındaki personeller yükleniyor...")
+        self.stdout.write("Veritabanındaki öğrenciler yükleniyor...")
         
         known_face_encodings = []
         known_face_ids = [] # İsim yerine ID tutacağız, veritabanından çekeceğiz
@@ -32,19 +32,19 @@ class Command(BaseCommand):
                     encoding = encodings[0]
                 else:
                     self.stdout.write(
-                        self.style.ERROR(f"Yüz bulunmadı : {emp.first_name}")
+                        self.style.ERROR(f"Yüz bulunmadı : {student.first_name}")
                     )
                     continue
                 
                 known_face_encodings.append(encoding)
                 known_face_ids.append(student.id)
-                known_face_names.append(f"{student.first_name} {emp.last_name}")
+                known_face_names.append(f"{student.first_name} {student.last_name}")
                 
                 self.stdout.write(self.style.SUCCESS(f"Yüklendi: {student.first_name} {student.last_name}"))
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f"Hata ({student.first_name}): {e}"))
 
-        self.stdout.write(f"Toplam {len(known_face_encodings)} personel hafızaya alındı.")
+        self.stdout.write(f"Toplam {len(known_face_encodings)} öğrenci hafızaya alındı.")
 
         # 2. KAMERAYI BAŞLAT
         video_capture = cv2.VideoCapture(0)
