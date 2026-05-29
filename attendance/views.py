@@ -107,11 +107,14 @@ def index(request):
     present_count = attendance_list.count()
     absent_count = total_students - present_count
 
+    last_attendance = attendance_list.first()
+
     return render(request, 'attendance/index.html', {
         'attendance_list': attendance_list,
         'total_students': total_students,
         'present_count': present_count,
         'absent_count': absent_count,
+        'last_attendance': last_attendance,
     })
 
 def gen(camera):
