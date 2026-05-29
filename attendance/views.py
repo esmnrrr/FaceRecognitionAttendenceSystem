@@ -99,8 +99,20 @@ class VideoCamera(object):
        
 # Görünümler
 def index(request):
-    attendance_list = Attendance.objects.filter(date=timezone.now().date()).order_by('-time_in')
-    return render(request, 'attendance/index.html', {'attendance_list': attendance_list})
+    today = timezone.now().date()
+
+    attendance_list = Attendance.objects.filter(date=today).order_by('-time_in')
+
+    total_students = Student.objects.count()
+    present_count = attendance_list.count()
+    absent_count = total_students - present_count
+
+    return render(request, 'attendance/index.html', {
+        'attendance_list': attendance_list,
+        'total_students': total_students,
+        'present_count': present_count,
+        'absent_count': absent_count,
+    })
 
 def gen(camera):
     while True:
