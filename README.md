@@ -26,3 +26,4 @@
 
 # face_distance ve np.argmin: O an kamerada gördüğü yüz vektörü ile Ramdeki yüz vektörleri arasındaki Öklid mesafesini ölçer. Mesafe ne kadar küçükse, yüzler o kadar benziyordur. argmin ile en küçük mesafeyi, yani "en çok benzeyen kişiyi" bulur.
 
+# StreamingHttpResponse: Sürekli olarak bir görüntü (frame) bekler. Eğer ders bittiğinde kamerayı tamamen kapatırsak, web sitesi "Yayın koptu, hata var!" diyerek çöker veya sayfayı dondurur. Siyah ekran göndermek, web sitesine "Yayın bağlantımız sapasağlam duruyor ama şu an sana gösterecek bir dersimiz yok" demenin en güvenli, en profesyonel ve en sisteme dost yoludur. o yzdn sistemi kapatmayip bu sekilde yapiyoruz/ Ayrica sistemi yoran kamera degil, saniyede 30 defa o görüntüyü alıp HOG algoritmasıyla pikselleri analiz etmek, 128 boyutlu vektörler çıkarmak ve veritabanında arama yapmaktır. 
