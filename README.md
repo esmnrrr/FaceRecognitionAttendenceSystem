@@ -1,29 +1,71 @@
-# FaceRecognitionAttendenceSystem
+# 🎓 Face Recognition Attendance System
 
+![Django](https://img.shields.io/badge/Django-092E20?style=for-the-badge&logo=django&logoColor=white)
+![OpenCV](https://img.shields.io/badge/OpenCV-27338e?style=for-the-badge&logo=OpenCV&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white)
 
-#.\venv\Scripts\activate
-#python manage.py runserver
+A smart, automated, and highly optimized attendance tracking system built with Django and OpenCV. This system uses facial recognition to automatically detect students and log their attendance during scheduled class hours, eliminating the need for manual roll calls.
 
-#python manage.py yoklama_baslat
+## ✨ Key Features
 
-#http://127.0.0.1:8000/
+* **🧠 Smart Sleep Mode & CPU Optimization:** The camera goes into "Standby Mode" (black screen) when no active courses are scheduled, drastically reducing CPU/RAM usage.
+* **🔄 Dynamic Course Auto-Switching:** The system automatically checks the weekly schedule and activates the correct course. It listens for a 30-minute window starting from the course's scheduled time.
+* **🛡️ Anti-Spam Cooldown System:** Implemented a 30-second cooldown per student to prevent database spamming if a student stands in front of the camera for a long time.
+* **📊 Dynamic Dashboard & Live Stats:** The web interface dynamically updates to show real-time attendance statistics (Present/Absent) specifically filtered for the currently active course.
+* **🗄️ Single Source of Truth Database Architecture:** Optimized Many-To-Many and ForeignKey relationships between Students, Courses, and Attendance records to prevent data conflicts (e.g., `CASCADE` and `SET_NULL` implementations).
+* **🇬🇧 Fully Localized:** 100% English UI and Admin Panel for a professional user experience.
 
+## 🛠️ Tech Stack
 
+* **Backend:** Python 3.11, Django 5
+* **Computer Vision:** OpenCV, `face_recognition`, NumPy
+* **Database:** SQLite (Development)
+* **Frontend:** HTML, CSS, JavaScript
 
-# employees/models.py: kimlik gibi bir sey, giris icin bilgileri tutuyoruz, photo = models.ImageField(...) ile aisteme birini kaydederken fotoğrafını yüklüyoruz ve bu fotoğraf profile_images/ klasörüne gidiyor
+## 🚀 How to Run the Project
 
-# attendance/models.py: employee = models.ForeignKey(...): yoklama tablosunu, ogrenci tablosuna bağlıyor yani bu yoklama kaydi bu idli ogrenciye ait diyor
+1.  **Clone the repository:**
+    ```bash
+    git clone [https://github.com/your-username/FaceRecognitionAttendenceSystem.git](https://github.com/esmnrrr/FaceRecognitionAttendenceSystem)
+    cd FaceRecognitionAttendenceSystem
+    ```
 
-# views.py: 
+2.  **Activate your virtual environment:**
+    ```bash
+    # Windows
+    .\venv\Scripts\activate
+    # Mac/Linux
+    source venv/bin/activate
+    ```
 
-# __init__: Kamera açılır (cv2.VideoCapture(0)). Sistem her frame'de gidip veritabanından fotoğraf okumak yerine, sistem ilk açıldığında ogrenci tablosundaki tüm ogrencileri döngüye sokup, fotoğraflarını Dlib'in anlayacağı 128 boyutlu yüz vektörlerine (encodings) çevirip RAM'e (self.known_face_encodings) alıyor.
+3.  **Install dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+    *(Note: You might need to install C++ Build Tools for the `dlib` and `face_recognition` libraries to compile successfully).*
 
-# face_recognition.compare_faces ve face_distance: Ekranda gördüğü yüzü, hafızasındaki yüzlerle karşılaştırır. En küçük mesafe (argmin), en çok benzeyen kişi demektir.
+4.  **Run database migrations:**
+    ```bash
+    python manage.py makemigrations
+    python manage.py migrate
+    ```
 
-# yuzTanımaTest.py: Bu dosyanın Django sitenle veya veritabanınla doğrudan bir bağlantısı yok! Test icin yazilan kutuphaneler calisiyor mu diye test ettigimiz dosya
+5.  **Create a superuser (for Admin Panel access):**
+    ```bash
+    python manage.py createsuperuser
+    ```
 
-# yoklamabaslat.py: small_frame = cv2.resize(...): optimizasyon icin kameradan gelen 1080p veya 720p görüntüyü, yüz aramak için 1/4 oranına küçültüyoruz. Amac gercek zamanli islem yaparken sistemi yormamak. 
+6.  **Start the server:**
+    ```bash
+    python manage.py runserver
+    ```
 
-# face_distance ve np.argmin: O an kamerada gördüğü yüz vektörü ile Ramdeki yüz vektörleri arasındaki Öklid mesafesini ölçer. Mesafe ne kadar küçükse, yüzler o kadar benziyordur. argmin ile en küçük mesafeyi, yani "en çok benzeyen kişiyi" bulur.
+7.  **Usage:** * Go to `http://127.0.0.1:8000/admin` to add Courses and Students (make sure to upload clear profile photos).
+    * Go to `http://127.0.0.1:8000/` to open the live camera feed and start tracking!
 
-# StreamingHttpResponse: Sürekli olarak bir görüntü (frame) bekler. Eğer ders bittiğinde kamerayı tamamen kapatırsak, web sitesi "Yayın koptu, hata var!" diyerek çöker veya sayfayı dondurur. Siyah ekran göndermek, web sitesine "Yayın bağlantımız sapasağlam duruyor ama şu an sana gösterecek bir dersimiz yok" demenin en güvenli, en profesyonel ve en sisteme dost yoludur. o yzdn sistemi kapatmayip bu sekilde yapiyoruz/ Ayrica sistemi yoran kamera degil, saniyede 30 defa o görüntüyü alıp HOG algoritmasıyla pikselleri analiz etmek, 128 boyutlu vektörler çıkarmak ve veritabanında arama yapmaktır. 
+## 👥 Team 
+
+* **Esmanur Tetik** - *Developer*
+* **Gözde Alan** - *Developer*
+* **Zeliha Amine Çelikkök** - *Developer*
