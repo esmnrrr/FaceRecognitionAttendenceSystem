@@ -3,9 +3,11 @@ from students.models import Student
 
 
 class Course(models.Model):
-    name = models.CharField(max_length=100, verbose_name="Course Name")
-    start_time = models.TimeField(verbose_name="Course Start Time")
-    is_active = models.BooleanField(default=True, verbose_name="Active")
+    name = models.CharField(max_length=100, verbose_name="Ders Adı")
+    start_time = models.TimeField(verbose_name="Ders Başlangıç Saati")
+    # "Sistem 30 dk açık kalacak" kuralı için bu saati referans alacağız
+    is_active = models.BooleanField(default=True, verbose_name="Sistem Açık mı?")
+    students = models.ManyToManyField('students.Student', related_name='courses', blank=True)
 
     def __str__(self):
         return f"{self.name} ({self.start_time})"
@@ -16,27 +18,10 @@ class Course(models.Model):
 
 
 class Attendance(models.Model):
-    student = models.ForeignKey(
-        Student,
-        on_delete=models.CASCADE,
-        verbose_name="Student"
-    )
-
-    course = models.ForeignKey(
-        Course,
-        on_delete=models.SET_NULL,
-        null=True,
-        verbose_name="Course"
-    )
-
-    date = models.DateField(
-        auto_now_add=True,
-        verbose_name="Date"
-    )
-
-    time_in = models.TimeField(
-        verbose_name="Check In Time"
-    )
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, verbose_name="Öğrenci")
+    course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, verbose_name="İlgili Ders")
+    date = models.DateField(auto_now_add=True, verbose_name="Tarih")
+    time_in = models.TimeField(auto_now_add=True, verbose_name="Giriş Saati")
 
     def __str__(self):
         return f"{self.student.first_name} - {self.date}"

@@ -6,7 +6,7 @@ import numpy as np
 from students.models import Student
 from attendance.models import Attendance, Course
 from django.utils import timezone
-
+from datetime import datetime, timedelta
 
 class VideoCamera(object):
     def __init__(self):
@@ -42,6 +42,33 @@ class VideoCamera(object):
             self.video.release()
 
     def get_frame(self):
+        bugunun_tarihi = timezone.localtime(timezone.now()).date()
+        su_an = timezone.localtime(timezone.now()).time()
+        
+        ders_zamani_mi = False
+        su_anki_ders = None
+        
+        # HANGİ DERSİN SAATİNDEYİZ ONU BUL
+        aktif_dersler = Course.objects.filter(is_active=True)
+        for ders in aktif_dersler:
+            baslangic = ders.start_time
+            tam_tarih = datetime.combine(bugunun_tarihi, baslangic)
+            bitis_zamani = (tam_tarih + timedelta(minutes=30)).time()
+            
+            if baslangic <= su_an <= bitis_zamani:
+                ders_zamani_mi = True
+                su_anki_ders = ders # <-- O ANKİ DERSİ HAFIZAYA AL
+                break 
+        
+        # 2. EĞER DERS ZAMANI DEĞİLSE SİYAH EKRAN
+        if not ders_zamani_mi:
+            black_image = np.zeros((480, 640, 3), dtype=np.uint8)
+            mesaj = "System on Standby (Waiting for Course...)" if aktif_dersler else "No Active Courses Set."
+            cv2.putText(black_image, mesaj, (50, 240), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+            ret, jpeg = cv2.imencode('.jpg', black_image)
+            return jpeg.tobytes()
+
+        # 3. DERS ZAMANIYSA YÜZ TANIMA İŞLEMİ
         success, image = self.video.read()
 
         if not success:
@@ -142,6 +169,7 @@ class VideoCamera(object):
             print(f"{student} is not registered for {active_course}.")
             return
 
+        # SADECE O GÜNE DEĞİL, O GÜNKÜ "O DERSE" GÖRE KONTROL ET
         obj, created = Attendance.objects.get_or_create(
             student=student,
             course=active_course,
@@ -152,7 +180,6 @@ class VideoCamera(object):
             obj.time_in = now
             obj.save()
             print(f"Attendance recorded: {student} - {active_course}")
-
 
 def index(request):
     today = timezone.localtime(timezone.now()).date()
@@ -168,17 +195,14 @@ def index(request):
         'active_course': active_course,
     })
 
-
 def gen(camera):
     while True:
         frame = camera.get_frame()
-
         if frame:
             yield (
                 b'--frame\r\n'
                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n'
             )
-
 
 def video_feed(request):
     return StreamingHttpResponse(
