@@ -13,66 +13,63 @@ class VideoCamera(object):
         self.video = cv2.VideoCapture(0)
 
         if not self.video.isOpened():
-            print("kamera açılmadı")
+            print("Kamera açılamadı")
 
         self.known_face_encodings = []
         self.known_face_ids = []
         self.known_face_names = []
         self.last_seen = {}
 
-        # --- DERS KONTROLÜ VE YÜZ YÜKLEME ---
-        bugunun_tarihi = timezone.localtime(timezone.now()).date()
-        self.aktif_ders = Course.objects.filter(is_active=True).first()
-        
-        if self.aktif_ders:
-            # Sadece bu derse kayıtlı olan öğrencileri al
-            students = self.aktif_ders.students.all()
+        aktif_dersler = Course.objects.filter(is_active=True)
+        for ders in aktif_dersler:
+            students = ders.students.all()
             for student in students:
-                try:
-                    img = face_recognition.load_image_file(student.photo.path)
-                    encodings = face_recognition.face_encodings(img)
+                if student.id not in self.known_face_ids:
+                    try:
+                        img = face_recognition.load_image_file(student.photo.path)
+                        encodings = face_recognition.face_encodings(img)
 
-                    if len(encodings) > 0:
-                        enc = encodings[0]
-                        self.known_face_encodings.append(enc)
-                        self.known_face_ids.append(student.id)
-                        self.known_face_names.append(
-                            f"{student.first_name} {student.last_name}"
-                        )
-                except Exception as e:
-                    print(f"Yüz yüklemede hata ({student.first_name}): {e}")
+                        if len(encodings) > 0:
+                            enc = encodings[0]
+                            self.known_face_encodings.append(enc)
+                            self.known_face_ids.append(student.id)
+                            self.known_face_names.append(
+                                f"{student.first_name} {student.last_name}"
+                            )
+                    except Exception as e:
+                        print(f"Yüz yüklemede hata ({student.first_name}): {e}")
 
     def __del__(self):
         self.video.release()
 
     def get_frame(self):
-        # 1. ZAMAN KONTROLÜ: Ders var mı ve saati geldi mi?
         bugunun_tarihi = timezone.localtime(timezone.now()).date()
         su_an = timezone.localtime(timezone.now()).time()
         
         ders_zamani_mi = False
+        su_anki_ders = None
         
-        if self.aktif_ders:
-            baslangic = self.aktif_ders.start_time
-            # Bitişi hesapla (Başlangıç + 30 dk)
+        # HANGİ DERSİN SAATİNDEYİZ ONU BUL
+        aktif_dersler = Course.objects.filter(is_active=True)
+        for ders in aktif_dersler:
+            baslangic = ders.start_time
             tam_tarih = datetime.combine(bugunun_tarihi, baslangic)
             bitis_zamani = (tam_tarih + timedelta(minutes=30)).time()
             
             if baslangic <= su_an <= bitis_zamani:
                 ders_zamani_mi = True
+                su_anki_ders = ders # <-- O ANKİ DERSİ HAFIZAYA AL
+                break 
         
-        # 2. EĞER DERS ZAMANI DEĞİLSE SİYAH BİR EKRAN DÖNDÜR (Kamerayı kapatmış gibi yap)
+        # 2. EĞER DERS ZAMANI DEĞİLSE SİYAH EKRAN
         if not ders_zamani_mi:
-            # 640x480 boyutlarında siyah bir resim oluştur
             black_image = np.zeros((480, 640, 3), dtype=np.uint8)
-            mesaj = "Sistem Uyku Modunda (Ders Bekleniyor...)" if not self.aktif_ders else "Yoklama Suresi Bitti."
-            
-            # Ekrana mesajı yaz
+            mesaj = "System on Standby (Waiting for Course...)" if aktif_dersler else "No Active Courses Set."
             cv2.putText(black_image, mesaj, (50, 240), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
             ret, jpeg = cv2.imencode('.jpg', black_image)
             return jpeg.tobytes()
 
-        # 3. EĞER DERS ZAMANIYSA NORMAL YÜZ TANIMA İŞLEMİNİ YAP
+        # 3. DERS ZAMANIYSA YÜZ TANIMA İŞLEMİ
         success, image = self.video.read()
 
         if not success:
@@ -95,7 +92,7 @@ class VideoCamera(object):
                 face_encoding
             )
 
-            name = "Bilinmiyor"
+            name = "Unknown"
             student_id = None
 
             face_distances = face_recognition.face_distance(
@@ -113,46 +110,37 @@ class VideoCamera(object):
                     current_time = timezone.now()
 
                     if student_id not in self.last_seen:
-                        self.record_attendance(student_id)
+                        # YOKLAMAYI KAYDEDERKEN "HANGİ DERS" OLDUĞUNU DA GÖNDERİYORUZ
+                        self.record_attendance(student_id, su_anki_ders)
                         self.last_seen[student_id] = current_time
 
-                    # Sadece son görülmeyi günceller, spam yapmasını engeller
                     elif (current_time - self.last_seen[student_id]).seconds > 30:
                         self.last_seen[student_id] = current_time
 
             face_names.append(name)
 
         for (top, right, bottom, left), name in zip(face_locations, face_names):
-            top *= 4
-            right *= 4
-            bottom *= 4
-            left *= 4
-
-            color = (0, 255, 0) if name != "Bilinmiyor" else (0, 0, 255)
+            top *= 4; right *= 4; bottom *= 4; left *= 4
+            color = (0, 255, 0) if name != "Unknown" else (0, 0, 255)
 
             cv2.rectangle(image, (left, top), (right, bottom), color, 2)
             cv2.rectangle(image, (left, bottom - 35), (right, bottom), color, cv2.FILLED)
-            cv2.putText(
-                image,
-                name,
-                (left + 6, bottom - 6),
-                cv2.FONT_HERSHEY_DUPLEX,
-                0.8,
-                (255, 255, 255),
-                1
-            )
+            cv2.putText(image, name, (left + 6, bottom - 6), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255, 255, 255), 1)
 
         ret, jpeg = cv2.imencode('.jpg', image)
         return jpeg.tobytes()
 
-    def record_attendance(self, student_id):
+    # DERS PARAMETRESİ EKLENDİ
+    def record_attendance(self, student_id, su_anki_ders):
         today = timezone.localtime(timezone.now()).date()
         now = timezone.localtime(timezone.now()).time()
 
         student = Student.objects.get(id=student_id)
 
+        # SADECE O GÜNE DEĞİL, O GÜNKÜ "O DERSE" GÖRE KONTROL ET
         obj, created = Attendance.objects.get_or_create(
             student=student,
+            course=su_anki_ders, # <-- İŞTE SİHİRLİ DOKUNUŞ BURASI
             date=today
         )
 
@@ -162,14 +150,36 @@ class VideoCamera(object):
 
 def index(request):
     today = timezone.localtime(timezone.now()).date()
-
-    attendance_list = Attendance.objects.filter(
-        date=today
-    ).order_by('-time_in')
+    su_an = timezone.localtime(timezone.now()).time()
     
-    active_course = Course.objects.filter(is_active=True).first()
+    tum_aktif_dersler = Course.objects.filter(is_active=True)
+    gercek_aktif_ders = None
+    is_system_active = False
 
-    total_students = Student.objects.count()
+    for ders in tum_aktif_dersler:
+        baslangic = ders.start_time
+        tam_tarih = datetime.combine(today, baslangic)
+        bitis_zamani = (tam_tarih + timedelta(minutes=30)).time()
+        
+        if baslangic <= su_an <= bitis_zamani:
+            gercek_aktif_ders = ders
+            is_system_active = True
+            break
+
+    # EĞER AKTİF BİR DERS VARSA SADECE ONUN YOKLAMASINI VE ÖĞRENCİ SAYISINI GETİR
+    if gercek_aktif_ders:
+        attendance_list = Attendance.objects.filter(
+            date=today,
+            course=gercek_aktif_ders # <-- LİSTEYİ DERSE GÖRE FİLTRELEDİK
+        ).order_by('-time_in')
+        
+        total_students = gercek_aktif_ders.students.count() # Sadece o derse kayıtlı toplam öğrenci sayısı
+    
+    # EĞER DERS YOKSA (SİSTEM UYKUDAYSA) LİSTEYİ BOŞ GÖSTER
+    else:
+        attendance_list = Attendance.objects.none()
+        total_students = 0
+
     present_count = attendance_list.count()
     absent_count = total_students - present_count
     last_attendance = attendance_list.first()
@@ -180,13 +190,13 @@ def index(request):
         'present_count': present_count,
         'absent_count': absent_count,
         'last_attendance': last_attendance,
-        'active_course': active_course,
+        'active_course': gercek_aktif_ders,
+        'is_system_active': is_system_active, 
     })
 
 def gen(camera):
     while True:
         frame = camera.get_frame()
-
         if frame:
             yield (
                 b'--frame\r\n'

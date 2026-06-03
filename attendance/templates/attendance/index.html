@@ -45,6 +45,12 @@
             color: #065f46;
         }
 
+        /* --- (Uyku Modu Rengi) --- */
+        .status-inactive {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
         .status-present {
             background-color: #dcfce7;
             color: #166534;
@@ -89,8 +95,16 @@
             <div class="col-md-4">
                 <div class="top-info-card">
                     <h6 class="text-muted mb-2">System Status</h6>
-                    <span class="status-badge status-active">● Camera Online</span>
-                    <span class="status-badge status-active">● Face Recognition Active</span>
+                    
+                    {% if is_system_active %}
+                        <span class="status-badge status-active">● Camera Online</span>
+                        <span class="status-badge status-active">● Face Recognition Active</span>
+                    
+                    {% else %}
+                        <span class="status-badge status-inactive">● System in Sleep Mode</span>
+                        <span class="status-badge status-inactive">● Camera on Standby</span>
+                    {% endif %}
+                    
                 </div>
             </div>
 
