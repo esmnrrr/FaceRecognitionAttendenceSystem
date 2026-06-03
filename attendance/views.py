@@ -13,7 +13,7 @@ class VideoCamera(object):
         self.video = cv2.VideoCapture(0)
 
         if not self.video.isOpened():
-            print("kamera açılmadı")
+            print("Camera could not be opened.")
 
         self.known_face_encodings = []
         self.known_face_ids = []
@@ -28,26 +28,24 @@ class VideoCamera(object):
                 encodings = face_recognition.face_encodings(img)
 
                 if len(encodings) > 0:
-                    enc = encodings[0]
-                else:
-                    continue
-
-                self.known_face_encodings.append(enc)
-                self.known_face_ids.append(student.id)
-                self.known_face_names.append(
-                    f"{student.first_name} {student.last_name}"
-                )
+                    self.known_face_encodings.append(encodings[0])
+                    self.known_face_ids.append(student.id)
+                    self.known_face_names.append(
+                        f"{student.first_name} {student.last_name}"
+                    )
 
             except Exception as e:
-                print(f"Yüz yüklemede hata: {e}")
+                print(f"Face loading error: {e}")
 
     def __del__(self):
-        self.video.release()
+        if self.video.isOpened():
+            self.video.release()
 
     def get_frame(self):
         success, image = self.video.read()
 
         if not success:
+            print("Frame could not be read.")
             return None
 
         small_frame = cv2.resize(image, (0, 0), fx=0.25, fy=0.25)
@@ -62,34 +60,41 @@ class VideoCamera(object):
         face_names = []
 
         for face_encoding in face_encodings:
-            matches = face_recognition.compare_faces(
-                self.known_face_encodings,
-                face_encoding
-            )
+            name = "Unknown"
 
-            name = "Bilinmiyor"
-            student_id = None
+            if len(self.known_face_encodings) > 0:
+                matches = face_recognition.compare_faces(
+                    self.known_face_encodings,
+                    face_encoding
+                )
 
-            face_distances = face_recognition.face_distance(
-                self.known_face_encodings,
-                face_encoding
-            )
+                face_distances = face_recognition.face_distance(
+                    self.known_face_encodings,
+                    face_encoding
+                )
 
-            if len(face_distances) > 0:
                 best_match_index = np.argmin(face_distances)
 
                 if matches[best_match_index]:
                     name = self.known_face_names[best_match_index]
                     student_id = self.known_face_ids[best_match_index]
 
-                    current_time = timezone.now()
+                    current_time = timezone.localtime(timezone.now())
 
                     if student_id not in self.last_seen:
-                        self.record_attendance(student_id)
+                        try:
+                            self.record_attendance(student_id)
+                        except Exception as e:
+                            print(f"Attendance recording error: {e}")
+
                         self.last_seen[student_id] = current_time
 
                     elif (current_time - self.last_seen[student_id]).seconds > 30:
-                        self.record_attendance(student_id)
+                        try:
+                            self.record_attendance(student_id)
+                        except Exception as e:
+                            print(f"Attendance recording error: {e}")
+
                         self.last_seen[student_id] = current_time
 
             face_names.append(name)
@@ -100,10 +105,11 @@ class VideoCamera(object):
             bottom *= 4
             left *= 4
 
-            color = (0, 255, 0) if name != "Bilinmiyor" else (0, 0, 255)
+            color = (0, 255, 0) if name != "Unknown" else (0, 0, 255)
 
             cv2.rectangle(image, (left, top), (right, bottom), color, 2)
             cv2.rectangle(image, (left, bottom - 35), (right, bottom), color, cv2.FILLED)
+
             cv2.putText(
                 image,
                 name,
@@ -115,43 +121,50 @@ class VideoCamera(object):
             )
 
         ret, jpeg = cv2.imencode('.jpg', image)
+
+        if not ret:
+            return None
+
         return jpeg.tobytes()
 
     def record_attendance(self, student_id):
-        today = timezone.now().date()
-        now = timezone.now().time()
+        today = timezone.localtime(timezone.now()).date()
+        now = timezone.localtime(timezone.now()).time()
 
         student = Student.objects.get(id=student_id)
+        active_course = Course.objects.filter(is_active=True).first()
+
+        if active_course is None:
+            print("No active course selected.")
+            return
+
+        if not student.courses.filter(id=active_course.id).exists():
+            print(f"{student} is not registered for {active_course}.")
+            return
 
         obj, created = Attendance.objects.get_or_create(
             student=student,
+            course=active_course,
             date=today
         )
 
         if created:
             obj.time_in = now
             obj.save()
+            print(f"Attendance recorded: {student} - {active_course}")
 
 
 def index(request):
-    today = timezone.now().date()
+    today = timezone.localtime(timezone.now()).date()
 
     attendance_list = Attendance.objects.filter(
         date=today
     ).order_by('-time_in')
-    active_course = Course.objects.filter(is_active=True).first()
 
-    total_students = Student.objects.count()
-    present_count = attendance_list.count()
-    absent_count = total_students - present_count
-    last_attendance = attendance_list.first()
+    active_course = Course.objects.filter(is_active=True).first()
 
     return render(request, 'attendance/index.html', {
         'attendance_list': attendance_list,
-        'total_students': total_students,
-        'present_count': present_count,
-        'absent_count': absent_count,
-        'last_attendance': last_attendance,
         'active_course': active_course,
     })
 

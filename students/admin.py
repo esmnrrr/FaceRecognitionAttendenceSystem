@@ -1,21 +1,32 @@
 from django.contrib import admin
 from .models import Student
 
-# Admin panelinin en üstündeki başlıkları genel bir yoklama sistemine çevirelim
-admin.site.site_header = "Yoklama Sistemi Yönetimi"
-admin.site.site_title = "Sistem Yöneticisi"
-admin.site.index_title = "Yönetim Paneline Hoş Geldiniz"
+# Admin panel titles
+admin.site.site_header = "Attendance System Management"
+admin.site.site_title = "System Administrator"
+admin.site.index_title = "Welcome to the Administration Panel"
+
 
 class StudentAdmin(admin.ModelAdmin):
-    # Sınıf bilgisi Esma'nın güncellediği kısımdan gelene kadar 
-    # geçici olarak departmanı 'Sınıf' gibi gösteriyoruz.
-    list_display = ('student_id', 'first_name', 'last_name', 'sinif_goster')
-    search_fields = ('first_name', 'last_name', 'student_id')
+    list_display = (
+        'student_id',
+        'first_name',
+        'last_name',
+        'department_display'
+    )
 
-    # Bu küçük ayar sayesinde veritabanında departman yazsa bile 
-    # hoca panelde 'Sınıf' başlığını görecek.
-    def sinif_goster(self, obj):
+    search_fields = (
+        'first_name',
+        'last_name',
+        'student_id'
+    )
+
+    filter_horizontal = ('courses',)
+
+    def department_display(self, obj):
         return obj.department
-    sinif_goster.short_description = 'Sınıf'
+
+    department_display.short_description = 'Department'
+
 
 admin.site.register(Student, StudentAdmin)
