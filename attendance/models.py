@@ -1,6 +1,7 @@
 from django.db import models
 from students.models import Student
 
+
 class Course(models.Model):
     name = models.CharField(max_length=100, verbose_name="Ders Adı")
     start_time = models.TimeField(verbose_name="Ders Başlangıç Saati")
@@ -12,8 +13,9 @@ class Course(models.Model):
         return f"{self.name} ({self.start_time})"
 
     class Meta:
-        verbose_name = "Ders Ayarı"
-        verbose_name_plural = "Ders Ayarları"
+        verbose_name = "Course"
+        verbose_name_plural = "Course Settings"
+
 
 class Attendance(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, verbose_name="Öğrenci")
@@ -25,5 +27,5 @@ class Attendance(models.Model):
         return f"{self.student.first_name} - {self.date}"
 
     class Meta:
-        verbose_name = "Yoklama Kaydı"
-        verbose_name_plural = "Yoklama Kayıtları"
+        verbose_name = "Attendance Record"
+        verbose_name_plural = "Attendance Records"
