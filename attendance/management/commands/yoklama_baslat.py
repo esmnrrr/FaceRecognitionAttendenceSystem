@@ -32,13 +32,13 @@ class Command(BaseCommand):
                     encoding = encodings[0]
                 else:
                     self.stdout.write(
-                        self.style.ERROR(f"Yüz bulunmadı : {emp.first_name}")
+                        self.style.ERROR(f"Yüz bulunmadı : {student.first_name}")
                     )
                     continue
                 
                 known_face_encodings.append(encoding)
                 known_face_ids.append(student.id)
-                known_face_names.append(f"{student.first_name} {emp.last_name}")
+                known_face_names.append(f"{student.first_name} {student.last_name}")
                 
                 self.stdout.write(self.style.SUCCESS(f"Yüklendi: {student.first_name} {student.last_name}"))
             except Exception as e:

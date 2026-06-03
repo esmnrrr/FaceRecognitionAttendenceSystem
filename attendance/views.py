@@ -4,35 +4,40 @@ import cv2
 import face_recognition
 import numpy as np
 from students.models import Student
-from attendance.models import Attendance
+from attendance.models import Attendance, Course
 from django.utils import timezone
 
-# Kamera Sınıfı
+
 class VideoCamera(object):
     def __init__(self):
         self.video = cv2.VideoCapture(0)
+
         if not self.video.isOpened():
             print("kamera açılmadı")
-        
-        # Veritabanındaki yüzleri hafızaya al
+
         self.known_face_encodings = []
         self.known_face_ids = []
         self.known_face_names = []
         self.last_seen = {}
-        
+
         students = Student.objects.all()
+
         for student in students:
             try:
-                img = face_recognition.load_image_file(emp.photo.path)
-                encodings = face_recognition.face_recognitions(img)
+                img = face_recognition.load_image_file(student.photo.path)
+                encodings = face_recognition.face_encodings(img)
 
                 if len(encodings) > 0:
                     enc = encodings[0]
                 else:
                     continue
+
                 self.known_face_encodings.append(enc)
-                self.known_face_ids.append(emp.id)
-                self.known_face_names.append(f"{emp.first_name} {emp.last_name}")
+                self.known_face_ids.append(student.id)
+                self.known_face_names.append(
+                    f"{student.first_name} {student.last_name}"
+                )
+
             except Exception as e:
                 print(f"Yüz yüklemede hata: {e}")
 
@@ -41,78 +46,129 @@ class VideoCamera(object):
 
     def get_frame(self):
         success, image = self.video.read()
+
         if not success:
             return None
-            
-        # Resmi küçült ve işle
+
         small_frame = cv2.resize(image, (0, 0), fx=0.25, fy=0.25)
         rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
-        
+
         face_locations = face_recognition.face_locations(rgb_small_frame)
-        face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+        face_encodings = face_recognition.face_encodings(
+            rgb_small_frame,
+            face_locations
+        )
 
         face_names = []
+
         for face_encoding in face_encodings:
-            matches = face_recognition.compare_faces(self.known_face_encodings, face_encoding)
+            matches = face_recognition.compare_faces(
+                self.known_face_encodings,
+                face_encoding
+            )
+
             name = "Bilinmiyor"
-            
-            face_distances = face_recognition.face_distance(self.known_face_encodings, face_encoding)
+            student_id = None
+
+            face_distances = face_recognition.face_distance(
+                self.known_face_encodings,
+                face_encoding
+            )
+
             if len(face_distances) > 0:
                 best_match_index = np.argmin(face_distances)
+
                 if matches[best_match_index]:
                     name = self.known_face_names[best_match_index]
                     student_id = self.known_face_ids[best_match_index]
 
                     current_time = timezone.now()
-                    #ilk kez gördüyse
+
                     if student_id not in self.last_seen:
                         self.record_attendance(student_id)
                         self.last_seen[student_id] = current_time
 
-                    #yine 30 saniye geçince güncelleme kısmı
-                    elif (current_time - self.last_seen[emp_id]).seconds > 30:
-                        self.record_attendance(emp_id)
-                        self.last_seen[emp_id] = current_time
-                    
-            
+                    elif (current_time - self.last_seen[student_id]).seconds > 30:
+                        self.record_attendance(student_id)
+                        self.last_seen[student_id] = current_time
+
             face_names.append(name)
 
-        # Kutuları çiz
         for (top, right, bottom, left), name in zip(face_locations, face_names):
-            top *= 4; right *= 4; bottom *= 4; left *= 4
-            cv2.rectangle(image, (left, top), (right, bottom), (0, 255, 0), 2)
-            cv2.rectangle(image, (left, bottom - 35), (right, bottom), (0, 255, 0), cv2.FILLED)
-            cv2.putText(image, name, (left + 6, bottom - 6), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255, 255, 255), 1)
+            top *= 4
+            right *= 4
+            bottom *= 4
+            left *= 4
+
+            color = (0, 255, 0) if name != "Bilinmiyor" else (0, 0, 255)
+
+            cv2.rectangle(image, (left, top), (right, bottom), color, 2)
+            cv2.rectangle(image, (left, bottom - 35), (right, bottom), color, cv2.FILLED)
+            cv2.putText(
+                image,
+                name,
+                (left + 6, bottom - 6),
+                cv2.FONT_HERSHEY_DUPLEX,
+                0.8,
+                (255, 255, 255),
+                1
+            )
 
         ret, jpeg = cv2.imencode('.jpg', image)
         return jpeg.tobytes()
 
-    def record_attendance(self, person_id):
+    def record_attendance(self, student_id):
         today = timezone.now().date()
         now = timezone.now().time()
-        emp = Student.objects.get(id=person_id)
-        
-        # Giriş yoksa oluştur, varsa çıkışı güncelle
-        obj, created = Attendance.objects.get_or_create(student=student, date=today)
+
+        student = Student.objects.get(id=student_id)
+
+        obj, created = Attendance.objects.get_or_create(
+            student=student,
+            date=today
+        )
+
         if created:
             obj.time_in = now
             obj.save()
-        else:
-            obj.time_out = now
-            obj.save()
 
-# Görünümler
+
 def index(request):
-    attendance_list = Attendance.objects.filter(date=timezone.now().date()).order_by('-time_in')
-    return render(request, 'attendance/index.html', {'attendance_list': attendance_list})
+    today = timezone.now().date()
+
+    attendance_list = Attendance.objects.filter(
+        date=today
+    ).order_by('-time_in')
+    active_course = Course.objects.filter(is_active=True).first()
+
+    total_students = Student.objects.count()
+    present_count = attendance_list.count()
+    absent_count = total_students - present_count
+    last_attendance = attendance_list.first()
+
+    return render(request, 'attendance/index.html', {
+        'attendance_list': attendance_list,
+        'total_students': total_students,
+        'present_count': present_count,
+        'absent_count': absent_count,
+        'last_attendance': last_attendance,
+        'active_course': active_course,
+    })
+
 
 def gen(camera):
     while True:
         frame = camera.get_frame()
+
         if frame:
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+            yield (
+                b'--frame\r\n'
+                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n'
+            )
+
 
 def video_feed(request):
-    return StreamingHttpResponse(gen(VideoCamera()),
-                                 content_type='multipart/x-mixed-replace; boundary=frame')
+    return StreamingHttpResponse(
+        gen(VideoCamera()),
+        content_type='multipart/x-mixed-replace; boundary=frame'
+    )
