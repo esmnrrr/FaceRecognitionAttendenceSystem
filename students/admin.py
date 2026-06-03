@@ -21,7 +21,7 @@ class StudentAdmin(admin.ModelAdmin):
         'student_id'
     )
 
-    filter_horizontal = ('courses',)
+    #filter_horizontal = ('courses',)
 
     def department_display(self, obj):
         return obj.department

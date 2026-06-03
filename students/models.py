@@ -46,12 +46,12 @@ class Student(models.Model):
         verbose_name="Department"
     )
 
-    # Courses that the student is enrolled in
-    courses = models.ManyToManyField(
-        'attendance.Course',
-        blank=True,
-        verbose_name="Registered Courses"
-    )
+    # # Courses that the student is enrolled in
+    # courses = models.ManyToManyField(
+    #     'attendance.Course',
+    #     blank=True,
+    #     verbose_name="Registered Courses"
+    # )
 
     # Date when the student record was created
     date_created = models.DateTimeField(
